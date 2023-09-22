@@ -10,9 +10,8 @@ using System.Data.SqlClient;
 using ApiTiama.Properties;
 using WindowsFormsApp1;
 using System.ComponentModel;
-using System.Collections;
-using System.Text;
-using System.Security.Policy;
+using System.Xml.Linq;
+using System.Data;
 
 //
 namespace ApiTiama
@@ -114,8 +113,6 @@ namespace ApiTiama
             {
                 richTextBox2.Text += DateTime.Now + " - " + ex.Message + Environment.NewLine;
                 richTextBox2.Text += DateTime.Now + " - " + sql + Environment.NewLine;
-
-                // MessageBox.Show(@"BackgroundWorker1: v " + ex.Message);
             }
 
             #region Обновляем сдув
@@ -403,6 +400,202 @@ namespace ApiTiama
             }
         }
 
+        private void button3_Click(object sender, EventArgs e)
+        {
+            GetDataForEject("Line_3_001_CES");
+        }
+
+        #region ОБРАБОТКА ПОСТАНОВКИ/СНЯТИЯ ПС
+        private bool GetDataForEject(string table)
+        {
+            ejectlog.Text += "----> Начинаю ВЫБОРКУ форм и кодов принудительного сдува" + Environment.NewLine;
+            var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
+            try
+            {
+                conn.Open();
+
+                var sql = "select * from [" + table + "] where  Id in (3,4)";
+                var command = new SqlCommand(sql, conn);
+
+                var toEject = new List<EJ>();
+
+                DataTable dt = new DataTable();
+                SqlDataAdapter da = new SqlDataAdapter(command);
+                da.Fill(dt);
+
+                var ej = dt.Rows[0].ItemArray.ToList().Select((val, ind) => new { Index = ind, Value = val }).Where(x => x.Index > 1 && Convert.ToInt32(x.Value) == 0).Select(p => new EJ { mold = (p.Index - 2).ToString(), reason = dt.Rows[1].ItemArray[p.Index].ToString() }).ToList();
+
+                if (ej.Count > 0)
+                {
+                    ejectlog.Text += "<---- Формы НАЙДЕНЫ, отправляю на сборку XML" + Environment.NewLine;
+                    return CreateAddEjectedMoldsXml(ej);
+                }
+
+                ejectlog.Text += "<---- Формы не найдены, ЗАВЕРШАЮ работу" + Environment.NewLine;
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                ejectlog.Text += "<---- ОШИБКА выборки форм" + Environment.NewLine;
+                return false;
+            }
+        }
+
+        private bool CreateAddEjectedMoldsXml(List<EJ> add)
+        {
+            ejectlog.Text += "----> Начинаю формировать XML для загрузки" + Environment.NewLine;
+            try
+            {
+                string fileLoc = "addejectedmolds.xml";
+                // вычищаем документ на всякий случай
+                XDocument xDocument = XDocument.Load(fileLoc);
+                xDocument.Descendants("mold").ToList().Remove();
+                xDocument.Save(fileLoc);
+                // -->
+
+                XmlDocument doc = new XmlDocument();
+                doc.Load(fileLoc);
+                var node = doc.SelectSingleNode("//Root");
+
+                add.ForEach(x => {
+                    // создаем элемент и присоединяем
+                    XmlElement elem;
+                    elem = doc.CreateElement("mold");
+                    elem.SetAttribute("nb", x.mold);
+                    elem.SetAttribute("reason", x.reason);
+                    node.AppendChild(elem);
+                    // -->
+                });
+
+                //сохраняем
+                doc.Save("ejload.xml");
+                // --
+                ejectlog.Text += "<---- XML СФОРМИРОВАН. Будет поставлено - " + add.Count() + "  форм " + Environment.NewLine;
+            }
+            catch(Exception ex)
+            {
+                ejectlog.Text += "<---- Ошибка формирования XML" + Environment.NewLine;
+                MessageBox.Show("ОШИБКА создания XML для постановки на принудительный сдув: " + ex.Message);
+                return false;
+            }
+
+            return true;
+        }
+
+        private void SendEjectToMashine(string ip)
+        {
+            ejectlog.Text += "----> Начинаю отправлять запрос на ПС" + Environment.NewLine;
+            var _url = "http://"+ip+"/WSTM11/Service.asmx";
+            var _action = "http://www.tiama-inspection.com/AddEjectedMolds";
+
+            XmlDocument soapEnvelopeXml = CreateSoapEnvelope("ejload.xml");
+            HttpWebRequest webRequest = CreateWebRequest(_url, _action);
+            InsertSoapEnvelopeIntoWebRequest(soapEnvelopeXml, webRequest);
+
+            IAsyncResult asyncResult = webRequest.BeginGetResponse(null, null);
+
+            asyncResult.AsyncWaitHandle.WaitOne();
+            ejectlog.Text += "<---- Запрос отправлен" + Environment.NewLine;
+
+            string soapResult;
+            using (WebResponse webResponse = webRequest.EndGetResponse(asyncResult))
+            {
+                using (StreamReader rd = new StreamReader(webResponse.GetResponseStream()))
+                {
+                    soapResult = rd.ReadToEnd();
+                }
+                ejectlog.Text += "----> Ответ получен:" + Environment.NewLine;
+                ejectlog.Text += "****************************************" + Environment.NewLine;
+                ejectlog.Text += soapResult + Environment.NewLine;
+                ejectlog.Text += "****************************************" + Environment.NewLine;
+                ejectlog.Text += "<---- Конец ответа" + Environment.NewLine;
+            }
+            
+        }
+
+        private List<EJ> GetEjectedFromM1()
+        {
+            ejectlog.Text += "----> Начинаю получать данные по формам на ПС" + Environment.NewLine;
+            var m = new ServiceTM11SoapClient();
+            XmlDocument docXML = new XmlDocument(); // XML-документ
+            var ans = m.EjectedMolds().InnerXml;
+            ans = "<xml>" + ans + "</xml>";
+            docXML.LoadXml(ans); // загрузить XML
+
+            // docXML.Load("ej.xml");
+
+            if (docXML.GetElementsByTagName("xml")[0].ChildNodes.Count == 0)
+            {
+                ejectlog.Text += "<---- Данные получены, ответ пустой" + Environment.NewLine;
+                return null;
+            }
+            else
+            {
+                var ej = new List<EJ>();
+                // разбор xml и передача в Woker
+                foreach (XmlNode node in docXML.GetElementsByTagName("xml")[0].ChildNodes)
+                {
+                    ej.Add(new EJ { mold = node.Attributes.GetNamedItem("nb").Value, reason = node.Attributes.GetNamedItem("reason").Value });
+                }
+                ejectlog.Text += "<---- Данные получены, форм в ответе - " + ej.Count() + Environment.NewLine;
+                return ej;
+            }
+        }
+
+        private void UpdateInDB(List<EJ> sended, List<EJ> geted, string table)
+        {
+            ejectlog.Text += "----> Начинаю обновлять данные в БД" + Environment.NewLine;
+            var id2 = "UPDATE [" + table + "] SET ";
+            var id3 = "UPDATE [" + table + "] SET ";
+            var id4 = "UPDATE [" + table + "] SET ";
+            var notSet = sended.Except(geted);
+            if(notSet.Count() == 0)
+            {
+                ejectlog.Text += "       Все формы были поставлены на сдув, формирую и отправляю запрос" + Environment.NewLine;
+                sended.ForEach(x =>
+                {
+                    id2 += " M" + x.mold + " = " + x.reason + " , ";
+                    id3 += " M" + x.mold + " = -1 , ";
+                    id4 += " M" + x.mold + " = -1 , ";
+                });
+            }
+            else
+            {
+                var setted = sended.Except(notSet).ToList();
+                ejectlog.Text += "       На сдув было поставлено - " + setted.Count() + " форм, формирую и отправляю запрос" + Environment.NewLine;
+                // получаем формы, которые встали на сдув и прописываем
+                setted.ForEach(x =>
+                {
+                    id2 += " M" + x.mold + " = " + x.reason + " , ";
+                    id3 += " M" + x.mold + " = -1 , ";
+                    id4 += " M" + x.mold + " = -1 , ";
+                });
+            }
+
+            var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
+            try
+            {
+                conn.Open();
+                var command = new SqlCommand(id2.Remove(id2.Length - 1), conn);
+                command.ExecuteNonQuery();
+                
+                command = new SqlCommand(id3.Remove(id3.Length - 1), conn);
+                command.ExecuteNonQuery();
+                
+                command = new SqlCommand(id4.Remove(id4.Length - 1), conn);
+                command.ExecuteNonQuery();
+
+                ejectlog.Text += "<---- БД обновлена, ЗАВЕРШАЮ работу" + Environment.NewLine;
+            }
+            catch (Exception ex)
+            {
+                ejectlog.Text += "<---- ОШИБКА выборки форм" + Environment.NewLine;
+            }
+        }
+
+        #endregion
+
         private void button5_Click(object sender, EventArgs e)
         {
             read_TG();
@@ -645,7 +838,7 @@ namespace ApiTiama
         }
         #endregion
 
-        //Группируем данные за 1 час
+        #region Группируем данные за 1 час
         private void zip_table()
         {
             //Суммируем показатели
@@ -713,5 +906,6 @@ namespace ApiTiama
             }
            
         }
+        #endregion
     }
 }
