@@ -12,6 +12,7 @@ using WindowsFormsApp1;
 using System.ComponentModel;
 using System.Xml.Linq;
 using System.Data;
+using System.Threading;
 
 //
 namespace ApiTiama
@@ -402,14 +403,43 @@ namespace ApiTiama
 
         private void button3_Click(object sender, EventArgs e)
         {
-            GetDataForEject("Line_3_001_CES");
+            /*
+             Обработка поставновки на сдув:
+                1) var sended = GetDataForEject со 2 параметром 0 - Получаем из БД данные по формам, которые необходимо поставить на сдув
+                2) CreateAddEjectedMoldsXml (sended) - формируем XML
+                3) SendEjectToMashine - отправляем сформированный XML на машину и ждем ответа
+                4) var getted = GetEjectedFromM1 - получаем данные какие формы стоят на сдуве
+                5) UpdateInDB(sended,getted, TABLE, 0) - обновляем данные в таблицах и заверщаем работу
+             
+             */
+            var sended = GetDataForEject("Line_3_001_CES", 0);
+            if(sended.Count() > 0)
+            {
+                if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine("192.168.1.224");
+                ejectlog.Text += "************** ОЖИДАЮ 10 СЕКУНД **************************" + Environment.NewLine;
+                Thread.Sleep(10000);
+                ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;
+                var getted = GetEjectedFromM1();
+                UpdateInDB(sended, getted, " Line_3_001_CES", 0);
+
+            } 
+
         }
 
         #region ОБРАБОТКА ПОСТАНОВКИ/СНЯТИЯ ПС
-        private bool GetDataForEject(string table)
+        /*GetDataForEject
+            Формирует массив форм для поставновки/снятия со сдува
+            Входные параметры:
+                    - string TABLE - таблица в которой осуществлять поиск
+                    - int VALUE - значения для поиска ( 0 и 1 ) - постановка или снятие со сдува
+            Выходные парамерты
+                    - List<EJ> toEject - список форм с указанием причины сдува
+         */
+        private List<EJ> GetDataForEject(string table, int value)
         {
             ejectlog.Text += "----> Начинаю ВЫБОРКУ форм и кодов принудительного сдува" + Environment.NewLine;
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
+            var toEject = new List<EJ>();
             try
             {
                 conn.Open();
@@ -417,31 +447,34 @@ namespace ApiTiama
                 var sql = "select * from [" + table + "] where  Id in (3,4)";
                 var command = new SqlCommand(sql, conn);
 
-                var toEject = new List<EJ>();
-
                 DataTable dt = new DataTable();
                 SqlDataAdapter da = new SqlDataAdapter(command);
                 da.Fill(dt);
 
-                var ej = dt.Rows[0].ItemArray.ToList().Select((val, ind) => new { Index = ind, Value = val }).Where(x => x.Index > 1 && Convert.ToInt32(x.Value) == 0).Select(p => new EJ { mold = (p.Index - 2).ToString(), reason = dt.Rows[1].ItemArray[p.Index].ToString() }).ToList();
+                toEject = dt.Rows[0].ItemArray.ToList().Select((val, ind) => new { Index = ind, Value = val }).Where(x => x.Index > 1 && Convert.ToInt32(x.Value) == value).Select(p => new EJ { mold = (p.Index - 2).ToString(), reason = dt.Rows[1].ItemArray[p.Index].ToString() }).ToList();
 
-                if (ej.Count > 0)
+                if (toEject.Count > 0)
                 {
                     ejectlog.Text += "<---- Формы НАЙДЕНЫ, отправляю на сборку XML" + Environment.NewLine;
-                    return CreateAddEjectedMoldsXml(ej);
                 }
 
                 ejectlog.Text += "<---- Формы не найдены, ЗАВЕРШАЮ работу" + Environment.NewLine;
-
-                return false;
             }
             catch (Exception ex)
             {
                 ejectlog.Text += "<---- ОШИБКА выборки форм" + Environment.NewLine;
-                return false;
             }
+            return toEject;
         }
 
+        /*CreateAddEjectedMoldsXml
+            Создает в папке XML-файл ejload.xml для дальнейшей передачи на машину
+            Входные параметры:
+                    - List<EJ> add - список форм с указанием причины сдува
+            Выходные парамерты
+                    - true - XML-файл сформирован и готов к загруке
+                    - false - произошла ошибка, XML-файл НЕ готов к загрузке
+         */
         private bool CreateAddEjectedMoldsXml(List<EJ> add)
         {
             ejectlog.Text += "----> Начинаю формировать XML для загрузки" + Environment.NewLine;
@@ -471,7 +504,7 @@ namespace ApiTiama
                 //сохраняем
                 doc.Save("ejload.xml");
                 // --
-                ejectlog.Text += "<---- XML СФОРМИРОВАН. Будет поставлено - " + add.Count() + "  форм " + Environment.NewLine;
+                ejectlog.Text += "<---- XML СФОРМИРОВАН. Содержит - " + add.Count() + "  форм " + Environment.NewLine;
             }
             catch(Exception ex)
             {
@@ -483,6 +516,13 @@ namespace ApiTiama
             return true;
         }
 
+        /* SendEjectToMashine
+            Формирует из XML SOAP-запрос и отправляет на машину (на основе XML-файла addejectedmolds.xml) TODO: XML хранить в памяти
+            Входные параметры:
+                    - string ip - ip-адрес машины на которую надо отправить запрос
+            Выходные парамерты
+                    - TODO: доработать после получения ответа
+         */
         private void SendEjectToMashine(string ip)
         {
             ejectlog.Text += "----> Начинаю отправлять запрос на ПС" + Environment.NewLine;
@@ -514,6 +554,13 @@ namespace ApiTiama
             
         }
 
+        /* GetEjectedFromM1
+            Получение ответа от машины по формам на сдуве
+            Входные параметры:
+                    
+            Выходные парамерты
+                    - List<EJ> -  список форм с указанием причины сдува, в т.ч. с 0 количеством
+         */
         private List<EJ> GetEjectedFromM1()
         {
             ejectlog.Text += "----> Начинаю получать данные по формам на ПС" + Environment.NewLine;
@@ -525,14 +572,15 @@ namespace ApiTiama
 
             // docXML.Load("ej.xml");
 
+            var ej = new List<EJ>();
+
             if (docXML.GetElementsByTagName("xml")[0].ChildNodes.Count == 0)
             {
                 ejectlog.Text += "<---- Данные получены, ответ пустой" + Environment.NewLine;
-                return null;
+                return ej;
             }
             else
             {
-                var ej = new List<EJ>();
                 // разбор xml и передача в Woker
                 foreach (XmlNode node in docXML.GetElementsByTagName("xml")[0].ChildNodes)
                 {
@@ -543,33 +591,46 @@ namespace ApiTiama
             }
         }
 
-        private void UpdateInDB(List<EJ> sended, List<EJ> geted, string table)
+        /* UpdateInDB
+            Получение ответа от машины по формам на сдуве
+            Входные параметры:
+                    - List<EJ> SENDED - список форм с указанием причины сдува ОТПРАВЛЕННЫХ на машину (полученных из БД, сформированных в xml и отправленных через SOAP)
+                    - List<EJ> GETTED - список форм с указанием причины сдува ПОЛУЧЕННЫХ с машины (результат выполнения функции GetEjectedFromM1)
+                    - string TABLE - таблица в которой обновляются данные
+                    - string ACTION - обработка постановки или снятия с ПС (1 - снятие, 0 - постановка) 
+            Выходные парамерты
+
+         */
+        private void UpdateInDB(List<EJ> sended, List<EJ> getted, string table, int action )
         {
-            ejectlog.Text += "----> Начинаю обновлять данные в БД" + Environment.NewLine;
+            string whatToDo = action == 1 ? " СНЯТИЕ " : " ПОСТАНОВКА ";
+            ejectlog.Text += "----> " + whatToDo + " Начинаю обновлять данные в БД"  + Environment.NewLine;
             var id2 = "UPDATE [" + table + "] SET ";
             var id3 = "UPDATE [" + table + "] SET ";
             var id4 = "UPDATE [" + table + "] SET ";
-            var notSet = sended.Except(geted);
+            var notSet = sended.Except(getted);
             if(notSet.Count() == 0)
             {
-                ejectlog.Text += "       Все формы были поставлены на сдув, формирую и отправляю запрос" + Environment.NewLine;
+                ejectlog.Text += "       Все формы были поставлены на " + whatToDo + ", формирую и отправляю запрос" + Environment.NewLine;
                 sended.ForEach(x =>
                 {
-                    id2 += " M" + x.mold + " = " + x.reason + " , ";
+                    if(action == 0) id2 += " M" + x.mold + " = " + x.reason + " , ";
+                    else id2 += " M" + x.mold + " = -1 , ";
                     id3 += " M" + x.mold + " = -1 , ";
-                    id4 += " M" + x.mold + " = -1 , ";
+                    if (action == 0) id4 += " M" + x.mold + " = -1 , ";
                 });
             }
             else
             {
                 var setted = sended.Except(notSet).ToList();
-                ejectlog.Text += "       На сдув было поставлено - " + setted.Count() + " форм, формирую и отправляю запрос" + Environment.NewLine;
+                ejectlog.Text += "       На " + whatToDo + " было поставлено - " + setted.Count() + " форм, формирую и отправляю запрос" + Environment.NewLine;
                 // получаем формы, которые встали на сдув и прописываем
                 setted.ForEach(x =>
                 {
-                    id2 += " M" + x.mold + " = " + x.reason + " , ";
+                    if (action == 0) id2 += " M" + x.mold + " = " + x.reason + " , ";
+                    else id2 += " M" + x.mold + " = -1 , ";
                     id3 += " M" + x.mold + " = -1 , ";
-                    id4 += " M" + x.mold + " = -1 , ";
+                    if (action == 0) id4 += " M" + x.mold + " = -1 , ";
                 });
             }
 
@@ -583,8 +644,11 @@ namespace ApiTiama
                 command = new SqlCommand(id3.Remove(id3.Length - 1), conn);
                 command.ExecuteNonQuery();
                 
-                command = new SqlCommand(id4.Remove(id4.Length - 1), conn);
-                command.ExecuteNonQuery();
+                if(action == 0)
+                {
+                    command = new SqlCommand(id4.Remove(id4.Length - 1), conn);
+                    command.ExecuteNonQuery();
+                }
 
                 ejectlog.Text += "<---- БД обновлена, ЗАВЕРШАЮ работу" + Environment.NewLine;
             }
