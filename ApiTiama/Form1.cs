@@ -415,7 +415,7 @@ namespace ApiTiama
             var sended = GetDataForEject("Line_3_001_CES", 0);
             if(sended.Count() > 0)
             {
-                if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine("192.168.1.224");
+                if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine("192.168.1.123");
                 ejectlog.Text += "************** ОЖИДАЮ 10 СЕКУНД **************************" + Environment.NewLine;
                 Thread.Sleep(10000);
                 ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;
