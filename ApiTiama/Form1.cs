@@ -412,7 +412,7 @@ namespace ApiTiama
                 5) UpdateInDB(sended,getted, TABLE, 0) - обновляем данные в таблицах и заверщаем работу
              
              */
-            var sended = GetDataForEject("Line_3_001_CES", 0);
+            var sended = GetDataForEject("[CPS2].[dbo].[Line_3_001_CES]", 0);
             if(sended.Count() > 0)
             {
                 if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine("192.168.1.123");
@@ -420,7 +420,7 @@ namespace ApiTiama
                 Thread.Sleep(10000);
                 ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;
                 var getted = GetEjectedFromM1();
-                UpdateInDB(sended, getted, " Line_3_001_CES", 0);
+                UpdateInDB(sended, getted, "[CPS2].[dbo].[Line_3_001_CES]", 0);
 
             } 
 
@@ -444,7 +444,7 @@ namespace ApiTiama
             {
                 conn.Open();
 
-                var sql = "select * from [" + table + "] where  Id in (3,4)";
+                var sql = "select * from " + table + " where  Id in (3,4)";
                 var command = new SqlCommand(sql, conn);
 
                 DataTable dt = new DataTable();
@@ -605,16 +605,19 @@ namespace ApiTiama
         {
             string whatToDo = action == 1 ? " СНЯТИЕ " : " ПОСТАНОВКА ";
             ejectlog.Text += "----> " + whatToDo + " Начинаю обновлять данные в БД"  + Environment.NewLine;
-            var id2 = "UPDATE [" + table + "] SET ";
-            var id3 = "UPDATE [" + table + "] SET ";
-            var id4 = "UPDATE [" + table + "] SET ";
+            var id1 = "UPDATE " + table + " SET ";
+            var id2 = "UPDATE " + table + " SET ";
+            var id3 = "UPDATE " + table + " SET ";
+            var id4 = "UPDATE " + table + " SET ";
             var notSet = sended.Except(getted);
             if(notSet.Count() == 0)
             {
                 ejectlog.Text += "       Все формы были поставлены на " + whatToDo + ", формирую и отправляю запрос" + Environment.NewLine;
                 sended.ForEach(x =>
                 {
-                    if(action == 0) id2 += " M" + x.mold + " = " + x.reason + " , ";
+                    if (action == 0) id1 += " M" + x.mold + " = 1 , ";
+                    else id2 += " M" + x.mold + " = 0 , ";
+                    if (action == 0) id2 += " M" + x.mold + " = " + x.reason + " , ";
                     else id2 += " M" + x.mold + " = -1 , ";
                     id3 += " M" + x.mold + " = -1 , ";
                     if (action == 0) id4 += " M" + x.mold + " = -1 , ";
@@ -638,15 +641,19 @@ namespace ApiTiama
             try
             {
                 conn.Open();
-                var command = new SqlCommand(id2.Remove(id2.Length - 1), conn);
+
+                var command = new SqlCommand(id1.Remove(id1.Length - 2) + " WHERE Id = 1 ", conn);
+                command.ExecuteNonQuery();
+
+                command = new SqlCommand(id2.Remove(id2.Length - 2) + " WHERE Id = 2 ", conn);
                 command.ExecuteNonQuery();
                 
-                command = new SqlCommand(id3.Remove(id3.Length - 1), conn);
+                command = new SqlCommand(id3.Remove(id3.Length - 2) + " WHERE Id = 3 ", conn);
                 command.ExecuteNonQuery();
                 
                 if(action == 0)
                 {
-                    command = new SqlCommand(id4.Remove(id4.Length - 1), conn);
+                    command = new SqlCommand(id4.Remove(id4.Length - 2) + " WHERE Id = 4 ", conn);
                     command.ExecuteNonQuery();
                 }
 
