@@ -117,7 +117,8 @@ namespace ApiTiama
             }
 
             #region Обновляем сдув
-
+            if (e.Result == null) toolStripStatusLabel1.Text = "На сдуве нет форм, ответ пуст"; return;
+            /*
             if (e.Result == null)
             {
                 toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
@@ -138,10 +139,12 @@ namespace ApiTiama
                 File.WriteAllText("buffer.txt", string.Empty);
                 return;
             } 
+            */
+            var ejected = (List<EJ>)e.Result;
 
-            var t = (List<EJ>)e.Result;
-
-            if (t.Count == 0)
+            if (ejected.Count == 0) toolStripStatusLabel1.Text = "На сдуве нет форм, ответ пуст"; return;
+            /*
+            if (t.Count == 0) 
             {
                 toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
                 var preRead = File.ReadAllLines("buffer.txt").ToList();
@@ -161,22 +164,64 @@ namespace ApiTiama
                 File.WriteAllText("buffer.txt", string.Empty);
                 return;
             }
+            */
 
-            sql = "UPDATE [Line_3_001_CES_1] SET ";
+
 
             try
             {
-                toolStripStatusLabel1.Text = "Обновляю сдув из файла, на сдуве есть данные";
+                toolStripStatusLabel1.Text = "Обновляю сдув, c машины поступили данные. Форм в ответе:" + ejected.Count;
 
+                var id1 = "UPDATE [Line_3_001_CES_1] SET ";
+                var id2 = "UPDATE [Line_3_001_CES_1] SET ";
+                var id3 = "UPDATE [Line_3_001_CES_1] SET ";
+                var id4 = "UPDATE [Line_3_001_CES_1] SET ";
+                   
+
+                ejected.ForEach(x =>
+                {
+                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                    var commandLocal = new SqlCommand(sqlLocal, conn);
+                    commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
+                    commandLocal.Parameters.AddWithValue("@p2", 1);
+                    commandLocal.Parameters.AddWithValue("@p3", x.mold);
+                    commandLocal.ExecuteNonQuery();
+
+                    id1 += " M" + x.mold + " = 1 , ";
+                    id2 += " M" + x.mold + " = " + x.reason + " , ";
+                    id3 += " M" + x.mold + " = -1 , ";
+                    id4 += " M" + x.mold + " = -1 , ";
+                });
+
+                try
+                {
+
+                    var command = new SqlCommand(id1.Remove(id1.Length - 2) + " WHERE Id = 1 ", conn);
+                    command.ExecuteNonQuery();
+
+                    command = new SqlCommand(id2.Remove(id2.Length - 2) + " WHERE Id = 2 ", conn);
+                    command.ExecuteNonQuery();
+
+                    command = new SqlCommand(id3.Remove(id3.Length - 2) + " WHERE Id = 3 ", conn);
+                    command.ExecuteNonQuery();
+
+                    command = new SqlCommand(id4.Remove(id4.Length - 2) + " WHERE Id = 4 ", conn);
+                    command.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("ОШИБКА! Запись в БД данных о ПС в авт.режиме: " + ex.Message);
+                }
+
+                /*
+                 * toolStripStatusLabel1.Text = "Обновляю сдув из файла, на сдуве есть данные";
                 // read file to get previous update 
                 var preRead = File.ReadAllLines("buffer.txt").ToList();
-
                 // Сравним файл с ответом и выберем отсутствующие в ответе формы
                 var result = preRead.Where(x => !t.Any(n => n.mold == x)).ToList();
-
                 // Сравним файл с ответом и выберем существующие в ответе формы
                 var result2 = t.Where(x => !preRead.Any(n => n == x.mold)).ToList();
-
+                
                 if(result.Count != 0)
                 {
                     // Запишем в таблицу FALSE
@@ -219,6 +264,7 @@ namespace ApiTiama
                 }
                 // обновим файл
                 t.ForEach(x => File.AppendAllText("buffer.txt", x.mold + Environment.NewLine));
+                */
             }
             catch (Exception ex)
             {
@@ -415,7 +461,7 @@ namespace ApiTiama
             var sended = GetDataForEject("[CPS2].[dbo].[Line_3_001_CES]", 0);
             if(sended.Count() > 0)
             {
-                if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine("192.168.1.123");
+                if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine("192.168.1.223");
                 ejectlog.Text += "************** ОЖИДАЮ 10 СЕКУНД **************************" + Environment.NewLine;
                 Thread.Sleep(10000);
                 ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;
@@ -616,7 +662,7 @@ namespace ApiTiama
                 sended.ForEach(x =>
                 {
                     if (action == 0) id1 += " M" + x.mold + " = 1 , ";
-                    else id2 += " M" + x.mold + " = 0 , ";
+                    else id1 += " M" + x.mold + " = 0 , ";
                     if (action == 0) id2 += " M" + x.mold + " = " + x.reason + " , ";
                     else id2 += " M" + x.mold + " = -1 , ";
                     id3 += " M" + x.mold + " = -1 , ";
@@ -630,6 +676,8 @@ namespace ApiTiama
                 // получаем формы, которые встали на сдув и прописываем
                 setted.ForEach(x =>
                 {
+                    if (action == 0) id1 += " M" + x.mold + " = 1 , ";
+                    else id1 += " M" + x.mold + " = 0 , ";
                     if (action == 0) id2 += " M" + x.mold + " = " + x.reason + " , ";
                     else id2 += " M" + x.mold + " = -1 , ";
                     id3 += " M" + x.mold + " = -1 , ";
