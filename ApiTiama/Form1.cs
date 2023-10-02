@@ -215,7 +215,7 @@ namespace ApiTiama
                     // Запишем в таблицу FALSE
                     foreach (var item in result)
                     {
-                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
                         var commandLocal = new SqlCommand(sqlLocal, conn);
                         commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
                         commandLocal.Parameters.AddWithValue("@p2", 0);
@@ -231,7 +231,7 @@ namespace ApiTiama
                 {
                     foreach (var item in result2)
                     {
-                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould, Reason) VALUES (@p1, @p2, @p3, @p4) ";
+                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould, Reason) VALUES (@p1, @p2, @p3, @p4) ";
                         var commandLocal = new SqlCommand(sqlLocal, conn);
                         commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
                         commandLocal.Parameters.AddWithValue("@p2", 1);
