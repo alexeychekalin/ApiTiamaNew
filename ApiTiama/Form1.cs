@@ -68,7 +68,7 @@ namespace ApiTiama
                 }
 
                 #region Записываем -1 в таблицу
-                sql = "UPDATE [Line_3_001_CES_1] SET ";
+                sql = "UPDATE [Line_3_001_CES] SET ";
 
                 for (int i = 0; i < 100; i++)
                 {
@@ -89,7 +89,7 @@ namespace ApiTiama
 
                 var mcf = _getMolds.GetElementsByTagName("Mold");
 
-                sql = "UPDATE [Line_3_001_CES_1] SET ";
+                sql = "UPDATE [Line_3_001_CES] SET ";
 
                 if(mcf.Count != 0)
                 {
@@ -117,70 +117,71 @@ namespace ApiTiama
             }
 
             #region Обновляем сдув
-            if (e.Result == null) toolStripStatusLabel1.Text = "На сдуве нет форм, ответ пуст"; return;
-            /*
-            if (e.Result == null)
-            {
-                toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
-                var preRead = File.ReadAllLines("buffer.txt").ToList();
+            if (e.Result == null) { 
+                toolStripStatusLabel1.Text = "На сдуве нет форм, ответ пуст";
 
-                // Запишем в таблицу FALSE
-                foreach (var item in preRead)
-                {
-                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
-                    var commandLocal = new SqlCommand(sqlLocal, conn);
-                    commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
-                    commandLocal.Parameters.AddWithValue("@p2", 0);
-                    commandLocal.Parameters.AddWithValue("@p3", item);
-                    commandLocal.ExecuteNonQuery();
-                }
+               if (e.Result == null)
+               {
+                   toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
+                   var preRead = File.ReadAllLines("buffer.txt").ToList();
 
-                // очистим файл
-                File.WriteAllText("buffer.txt", string.Empty);
-                return;
-            } 
-            */
+                   // Запишем в таблицу FALSE
+                   foreach (var item in preRead)
+                   {
+                       var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                       var commandLocal = new SqlCommand(sqlLocal, conn);
+                       commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
+                       commandLocal.Parameters.AddWithValue("@p2", 0);
+                       commandLocal.Parameters.AddWithValue("@p3", item);
+                       commandLocal.ExecuteNonQuery();
+                   }
+
+                   // очистим файл
+                   File.WriteAllText("buffer.txt", string.Empty);
+                   return;
+               } 
+
+                return; 
+            }
+           
             var ejected = (List<EJ>)e.Result;
 
-            if (ejected.Count == 0) toolStripStatusLabel1.Text = "На сдуве нет форм, ответ пуст"; return;
-            /*
-            if (t.Count == 0) 
-            {
-                toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
-                var preRead = File.ReadAllLines("buffer.txt").ToList();
+            if (ejected.Count == 0) { 
+                toolStripStatusLabel1.Text = "На сдуве нет форм, ответ пуст";
 
-                // Запишем в таблицу FALSE
-                foreach (var item in preRead)
+                if (ejected.Count == 0)
                 {
-                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
-                    var commandLocal = new SqlCommand(sqlLocal, conn);
-                    commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
-                    commandLocal.Parameters.AddWithValue("@p2", 0);
-                    commandLocal.Parameters.AddWithValue("@p3", item);
-                    commandLocal.ExecuteNonQuery();
+                    toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
+                    var preRead = File.ReadAllLines("buffer.txt").ToList();
+
+                    // Запишем в таблицу FALSE
+                    foreach (var item in preRead)
+                    {
+                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                        var commandLocal = new SqlCommand(sqlLocal, conn);
+                        commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
+                        commandLocal.Parameters.AddWithValue("@p2", 0);
+                        commandLocal.Parameters.AddWithValue("@p3", item);
+                        commandLocal.ExecuteNonQuery();
+                    }
+
+                    // очистим файл
+                    File.WriteAllText("buffer.txt", string.Empty);
+                    return;
                 }
 
-                // очистим файл
-                File.WriteAllText("buffer.txt", string.Empty);
-                return;
+                return; 
             }
-            */
-
-
 
             try
             {
                 toolStripStatusLabel1.Text = "Обновляю сдув, c машины поступили данные. Форм в ответе:" + ejected.Count;
 
-                var id1 = "UPDATE [Line_3_001_CES_1] SET ";
-                var id2 = "UPDATE [Line_3_001_CES_1] SET ";
-                var id3 = "UPDATE [Line_3_001_CES_1] SET ";
-                var id4 = "UPDATE [Line_3_001_CES_1] SET ";
-                   
+                var id1 = "UPDATE [Line_3_001_CES] SET ";
 
                 ejected.ForEach(x =>
                 {
-                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
                     var commandLocal = new SqlCommand(sqlLocal, conn);
                     commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
                     commandLocal.Parameters.AddWithValue("@p2", 1);
@@ -188,24 +189,11 @@ namespace ApiTiama
                     commandLocal.ExecuteNonQuery();
 
                     id1 += " M" + x.mold + " = 1 , ";
-                    id2 += " M" + x.mold + " = " + x.reason + " , ";
-                    id3 += " M" + x.mold + " = -1 , ";
-                    id4 += " M" + x.mold + " = -1 , ";
                 });
 
                 try
                 {
-
                     var command = new SqlCommand(id1.Remove(id1.Length - 2) + " WHERE Id = 1 ", conn);
-                    command.ExecuteNonQuery();
-
-                    command = new SqlCommand(id2.Remove(id2.Length - 2) + " WHERE Id = 2 ", conn);
-                    command.ExecuteNonQuery();
-
-                    command = new SqlCommand(id3.Remove(id3.Length - 2) + " WHERE Id = 3 ", conn);
-                    command.ExecuteNonQuery();
-
-                    command = new SqlCommand(id4.Remove(id4.Length - 2) + " WHERE Id = 4 ", conn);
                     command.ExecuteNonQuery();
                 }
                 catch (Exception ex)
@@ -213,14 +201,14 @@ namespace ApiTiama
                     MessageBox.Show("ОШИБКА! Запись в БД данных о ПС в авт.режиме: " + ex.Message);
                 }
 
-                /*
-                 * toolStripStatusLabel1.Text = "Обновляю сдув из файла, на сдуве есть данные";
+                
+                toolStripStatusLabel1.Text = "Обновляю сдув из файла, на сдуве есть данные";
                 // read file to get previous update 
                 var preRead = File.ReadAllLines("buffer.txt").ToList();
                 // Сравним файл с ответом и выберем отсутствующие в ответе формы
-                var result = preRead.Where(x => !t.Any(n => n.mold == x)).ToList();
+                var result = preRead.Where(x => !ejected.Any(n => n.mold == x)).ToList();
                 // Сравним файл с ответом и выберем существующие в ответе формы
-                var result2 = t.Where(x => !preRead.Any(n => n == x.mold)).ToList();
+                var result2 = ejected.Where(x => !preRead.Any(n => n == x.mold)).ToList();
                 
                 if(result.Count != 0)
                 {
@@ -263,8 +251,8 @@ namespace ApiTiama
                     toolStripStatusLabel1.Text = "Обновлены данные по сдуву";
                 }
                 // обновим файл
-                t.ForEach(x => File.AppendAllText("buffer.txt", x.mold + Environment.NewLine));
-                */
+                ejected.ForEach(x => File.AppendAllText("buffer.txt", x.mold + Environment.NewLine));
+
             }
             catch (Exception ex)
             {
