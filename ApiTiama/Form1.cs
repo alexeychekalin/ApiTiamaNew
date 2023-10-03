@@ -115,11 +115,8 @@ namespace ApiTiama
                 richTextBox2.Text += DateTime.Now + " - " + sql + Environment.NewLine;
             }
 
-            var t = e.Result;
-            t = null;
-
             #region Обновляем сдув
-            if (t == null) { 
+            if (e.Result == null) { 
                 toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
                 var preRead = File.ReadAllLines("buffer.txt").ToList();
 
