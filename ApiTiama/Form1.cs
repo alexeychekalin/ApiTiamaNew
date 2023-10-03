@@ -344,7 +344,7 @@ namespace ApiTiama
         {
             var m = new ServiceTM11SoapClient();
 
-            var _url = "http://192.168.1.223/WSTM11/Service.asmx";
+            var _url = "http://"+Resources.ip+"/WSTM11/Service.asmx";
             var _action = "http://www.tiama-inspection.com/EjectedMolds";
 
             XmlDocument soapEnvelopeXml = CreateSoapEnvelope("1.xml");
@@ -401,7 +401,7 @@ namespace ApiTiama
         {
             var m = new ServiceTM11SoapClient();
 
-            var _url = "http://192.168.1.223/WSTM11/Service.asmx";
+            var _url = "http://"+Resources.ip+"/WSTM11/Service.asmx";
             var _action = "http://www.tiama-inspection.com/AddEjectedMolds";
 
             XmlDocument soapEnvelopeXml = CreateSoapEnvelope("2.xml");
@@ -441,7 +441,7 @@ namespace ApiTiama
             var sended = GetDataForEject("[CPS2].[dbo].[Line_3_001_CES]", 1);
             if(sended.Count() > 0)
             {
-                if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine("192.168.1.223");
+                if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine(Resources.ip);
                 ejectlog.Text += "************** ОЖИДАЮ 10 СЕКУНД **************************" + Environment.NewLine;
                 Thread.Sleep(10000);
                 ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;

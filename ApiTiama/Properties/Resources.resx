@@ -120,6 +120,9 @@
   <data name="Cech" xml:space="preserve">
     <value>2</value>
   </data>
+  <data name="ip" xml:space="preserve">
+    <value>192.168.1.223</value>
+  </data>
   <data name="LineControl" xml:space="preserve">
     <value>3</value>
   </data>
