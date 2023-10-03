@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<SavedWcfConfigurationInformation xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="9.1" CheckSum="5FDJqoC/D/lArIbeM7q0jLKOvuF1+b32RYZiHMh6V8M=">
+<SavedWcfConfigurationInformation xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="9.1" CheckSum="B/QHG0Hv8W8YVGEoGox+Z756I344mQK2tHclgvM2IDE=">
   <bindingConfigurations>
     <bindingConfiguration bindingType="basicHttpBinding" name="ServiceTM11Soap">
       <properties>
@@ -112,10 +112,10 @@
     </bindingConfiguration>
   </bindingConfigurations>
   <endpoints>
-    <endpoint name="ServiceTM11Soap" contract="ServiceReference3.ServiceTM11Soap" bindingType="basicHttpBinding" address="http://192.168.1.224/WSTM11/Service.asmx" bindingConfiguration="ServiceTM11Soap">
+    <endpoint name="ServiceTM11Soap" contract="ServiceReference3.ServiceTM11Soap" bindingType="basicHttpBinding" address="http://192.168.1.223/WSTM11/Service.asmx" bindingConfiguration="ServiceTM11Soap">
       <properties>
         <property path="/address" isComplexType="false" isExplicitlyDefined="true" clrType="System.Uri, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>http://192.168.1.224/WSTM11/Service.asmx</serializedValue>
+          <serializedValue>http://192.168.1.223/WSTM11/Service.asmx</serializedValue>
         </property>
         <property path="/behaviorConfiguration" isComplexType="false" isExplicitlyDefined="false" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue />

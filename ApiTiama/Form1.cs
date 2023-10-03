@@ -106,7 +106,6 @@ namespace ApiTiama
 
                     toolStripStatusLabel1.Text = "Обновлены данные по установленным формам";
                 }
-
                 #endregion
 
             }
@@ -116,66 +115,57 @@ namespace ApiTiama
                 richTextBox2.Text += DateTime.Now + " - " + sql + Environment.NewLine;
             }
 
+            var t = e.Result;
+            t = null;
+
             #region Обновляем сдув
-            if (e.Result == null) { 
-                toolStripStatusLabel1.Text = "На сдуве нет форм, ответ пуст";
+            if (t == null) { 
+                toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
+                var preRead = File.ReadAllLines("buffer.txt").ToList();
 
-               if (e.Result == null)
-               {
-                   toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
-                   var preRead = File.ReadAllLines("buffer.txt").ToList();
+                // Запишем в таблицу FALSE
+                foreach (var item in preRead)
+                {
+                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                    var commandLocal = new SqlCommand(sqlLocal, conn);
+                    commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
+                    commandLocal.Parameters.AddWithValue("@p2", 0);
+                    commandLocal.Parameters.AddWithValue("@p3", item);
+                    commandLocal.ExecuteNonQuery();
+                }
 
-                   // Запишем в таблицу FALSE
-                   foreach (var item in preRead)
-                   {
-                       var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
-                       var commandLocal = new SqlCommand(sqlLocal, conn);
-                       commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
-                       commandLocal.Parameters.AddWithValue("@p2", 0);
-                       commandLocal.Parameters.AddWithValue("@p3", item);
-                       commandLocal.ExecuteNonQuery();
-                   }
-
-                   // очистим файл
-                   File.WriteAllText("buffer.txt", string.Empty);
-                   return;
-               } 
-
-                return; 
+                // очистим файл
+                File.WriteAllText("buffer.txt", string.Empty);
+                return;
             }
            
             var ejected = (List<EJ>)e.Result;
 
             if (ejected.Count == 0) { 
-                toolStripStatusLabel1.Text = "На сдуве нет форм, ответ пуст";
+                toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
+                var preRead = File.ReadAllLines("buffer.txt").ToList();
 
-                if (ejected.Count == 0)
+                // Запишем в таблицу FALSE
+                foreach (var item in preRead)
                 {
-                    toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
-                    var preRead = File.ReadAllLines("buffer.txt").ToList();
-
-                    // Запишем в таблицу FALSE
-                    foreach (var item in preRead)
-                    {
-                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
-                        var commandLocal = new SqlCommand(sqlLocal, conn);
-                        commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
-                        commandLocal.Parameters.AddWithValue("@p2", 0);
-                        commandLocal.Parameters.AddWithValue("@p3", item);
-                        commandLocal.ExecuteNonQuery();
-                    }
-
-                    // очистим файл
-                    File.WriteAllText("buffer.txt", string.Empty);
-                    return;
+                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                    var commandLocal = new SqlCommand(sqlLocal, conn);
+                    commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
+                    commandLocal.Parameters.AddWithValue("@p2", 0);
+                    commandLocal.Parameters.AddWithValue("@p3", item);
+                    commandLocal.ExecuteNonQuery();
                 }
 
-                return; 
+                // очистим файл
+                File.WriteAllText("buffer.txt", string.Empty);
+                return;
             }
 
             try
             {
                 toolStripStatusLabel1.Text = "Обновляю сдув, c машины поступили данные. Форм в ответе:" + ejected.Count;
+
+                /*
 
                 var id1 = "UPDATE [Line_3_001_CES] SET ";
 
@@ -200,7 +190,7 @@ namespace ApiTiama
                 {
                     MessageBox.Show("ОШИБКА! Запись в БД данных о ПС в авт.режиме: " + ex.Message);
                 }
-
+                */
                 
                 toolStripStatusLabel1.Text = "Обновляю сдув из файла, на сдуве есть данные";
                 // read file to get previous update 
@@ -209,8 +199,10 @@ namespace ApiTiama
                 var result = preRead.Where(x => !ejected.Any(n => n.mold == x)).ToList();
                 // Сравним файл с ответом и выберем существующие в ответе формы
                 var result2 = ejected.Where(x => !preRead.Any(n => n == x.mold)).ToList();
-                
-                if(result.Count != 0)
+
+                var id1 = "UPDATE [Line_3_001_CES] SET ";
+
+                if (result.Count != 0)
                 {
                     // Запишем в таблицу FALSE
                     foreach (var item in result)
@@ -221,6 +213,8 @@ namespace ApiTiama
                         commandLocal.Parameters.AddWithValue("@p2", 0);
                         commandLocal.Parameters.AddWithValue("@p3", item);
                         commandLocal.ExecuteNonQuery();
+
+                        id1 += " M" + item + " = 0 , ";
                     }
                 }
 
@@ -229,6 +223,7 @@ namespace ApiTiama
 
                 if (result2.Count != 0)
                 {
+                    sql = "UPDATE [Line_3_001_CES] SET ";
                     foreach (var item in result2)
                     {
                         var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould, Reason) VALUES (@p1, @p2, @p3, @p4) ";
@@ -352,7 +347,7 @@ namespace ApiTiama
         {
             var m = new ServiceTM11SoapClient();
 
-            var _url = "http://192.168.1.224/WSTM11/Service.asmx";
+            var _url = "http://192.168.1.223/WSTM11/Service.asmx";
             var _action = "http://www.tiama-inspection.com/EjectedMolds";
 
             XmlDocument soapEnvelopeXml = CreateSoapEnvelope("1.xml");
@@ -409,7 +404,7 @@ namespace ApiTiama
         {
             var m = new ServiceTM11SoapClient();
 
-            var _url = "http://192.168.1.224/WSTM11/Service.asmx";
+            var _url = "http://192.168.1.223/WSTM11/Service.asmx";
             var _action = "http://www.tiama-inspection.com/AddEjectedMolds";
 
             XmlDocument soapEnvelopeXml = CreateSoapEnvelope("2.xml");
@@ -446,7 +441,7 @@ namespace ApiTiama
                 5) UpdateInDB(sended,getted, TABLE, 0) - обновляем данные в таблицах и заверщаем работу
              
              */
-            var sended = GetDataForEject("[CPS2].[dbo].[Line_3_001_CES]", 0);
+            var sended = GetDataForEject("[CPS2].[dbo].[Line_3_001_CES]", 1);
             if(sended.Count() > 0)
             {
                 if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine("192.168.1.223");
@@ -454,7 +449,7 @@ namespace ApiTiama
                 Thread.Sleep(10000);
                 ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;
                 var getted = GetEjectedFromM1();
-                UpdateInDB(sended, getted, "[CPS2].[dbo].[Line_3_001_CES]", 0);
+                UpdateInDB(sended, getted, "[CPS2].[dbo].[Line_3_001_CES]", 1);
 
             } 
 
