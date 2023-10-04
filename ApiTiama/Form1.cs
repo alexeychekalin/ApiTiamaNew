@@ -54,6 +54,8 @@ namespace ApiTiama
 
         private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+
+
             var sql = "";
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
             try
@@ -64,6 +66,10 @@ namespace ApiTiama
                 {
                     toolStripStatusLabel1.Text = "Машина на отдыхе, вернула пустой ответ";
                     richTextBox2.Text += DateTime.Now + " - " + "Ответ COUNT пустой"+Environment.NewLine;
+                    ejectlog.Text = "";
+                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 0); // постановка
+                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 1); // снятие
+                    
                     return;
                 }
 
@@ -114,6 +120,9 @@ namespace ApiTiama
                 richTextBox2.Text += DateTime.Now + " - " + ex.Message + Environment.NewLine;
                 richTextBox2.Text += DateTime.Now + " - " + sql + Environment.NewLine;
             }
+            ejectlog.Text = "";
+            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 0); // постановка
+            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 1); // снятие
 
             #region Обновляем сдув
             if (e.Result == null) { 
@@ -260,8 +269,7 @@ namespace ApiTiama
 
             #region Автоматическое обновление ПС на машине
 
-            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 0); // постановка
-            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 1); // снятие
+
 
             #endregion
 
@@ -448,7 +456,7 @@ namespace ApiTiama
             var sended = GetDataForEject("[CPS2].[dbo].[Line_3_001_CES]", 1);
             if(sended.Count() > 0)
             {
-                if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine(Resources.ip);
+                if(CreateAddEjectedMoldsXml(sended, 1)) SendEjectToMashine(Resources.ip);
                 ejectlog.Text += "************** ОЖИДАЮ 5 СЕКУНД **************************" + Environment.NewLine;
                 Thread.Sleep(5000);
                 ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;
@@ -469,6 +477,7 @@ namespace ApiTiama
          */
         private void AddRemoveEject(string table, int action)
         {
+           // ejectlog.Text = "";
             ejectlog.Text += DateTime.Now.ToString("HH:mm:ss dd.MM.yy") +  " ----> Обработка ПС " + Environment.NewLine;
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
             var toEject = new List<EJ>();
@@ -485,12 +494,12 @@ namespace ApiTiama
                 SqlDataAdapter da = new SqlDataAdapter(command);
                 da.Fill(dt);
 
-                toEject = dt.Rows[0].ItemArray.ToList().Select((val, ind) => new { Index = ind, Value = val }).Where(x => x.Index > 1 && Convert.ToInt32(x.Value) == action).Select(p => new EJ { mold = (p.Index - 2).ToString(), reason = dt.Rows[1].ItemArray[p.Index].ToString() }).ToList();
+                toEject = dt.Rows[0].ItemArray.ToList().Select((val, ind) => new { Index = ind, Value = val }).Where(x => x.Index > 1 && Convert.ToInt32(x.Value) == action).Select(p => new EJ { mold = (p.Index - 2).ToString(), reason = action == 1 ? "0" : dt.Rows[1].ItemArray[p.Index].ToString() }).ToList();
 
                 if (toEject.Count > 0)
                 {
                     ejectlog.Text += "<---- Форм НАЙДЕНО: " + toEject.Count() + Environment.NewLine;
-                    CreateAddEjectedMoldsXml(toEject);
+                    CreateAddEjectedMoldsXml(toEject, action);
                     SendEjectToMashine(Resources.ip);
                     Thread.Sleep(5000);
                     var getted = GetEjectedFromM1();
@@ -531,7 +540,7 @@ namespace ApiTiama
                 SqlDataAdapter da = new SqlDataAdapter(command);
                 da.Fill(dt);
 
-                toEject = dt.Rows[0].ItemArray.ToList().Select((val, ind) => new { Index = ind, Value = val }).Where(x => x.Index > 1 && Convert.ToInt32(x.Value) == value).Select(p => new EJ { mold = (p.Index - 2).ToString(), reason = dt.Rows[1].ItemArray[p.Index].ToString() }).ToList();
+                toEject = dt.Rows[0].ItemArray.ToList().Select((val, ind) => new { Index = ind, Value = val }).Where(x => x.Index > 1 && Convert.ToInt32(x.Value) == value).Select(p => new EJ { mold = (p.Index - 2).ToString(), reason = value == 0 ? "0" : dt.Rows[1].ItemArray[p.Index].ToString() }).ToList();
 
                 if (toEject.Count > 0)
                 {
@@ -555,7 +564,7 @@ namespace ApiTiama
                     - true - XML-файл сформирован и готов к загруке
                     - false - произошла ошибка, XML-файл НЕ готов к загрузке
          */
-        private bool CreateAddEjectedMoldsXml(List<EJ> add, bool reject = false)
+        private bool CreateAddEjectedMoldsXml(List<EJ> add, int reject)
         {
            // ejectlog.Text += "----> Начинаю формировать XML для загрузки" + Environment.NewLine;
             try
@@ -576,7 +585,7 @@ namespace ApiTiama
                     XmlElement elem;
                     elem = doc.CreateElement("mold");
                     elem.SetAttribute("nb", x.mold);
-                    elem.SetAttribute("reason", reject ? "0" : x.reason);
+                    elem.SetAttribute("reason", reject == 1 ? "0" : x.reason);
                     node.AppendChild(elem);
                     // -->
                 });
@@ -690,13 +699,13 @@ namespace ApiTiama
             var id3 = "UPDATE " + table + " SET ";
             var id4 = "UPDATE " + table + " SET ";
             var notSet = sended.Except(getted);
-            if(notSet.Count() == 0)
+            if(notSet.Count() == 0 || action == 1)
             {
                 ejectlog.Text += "       Все формы были поставлены на " + whatToDo + ", формирую и отправляю запрос" + Environment.NewLine;
                 sended.ForEach(x =>
                 {
                     if (action == 0) id1 += " M" + x.mold + " = 1 , ";
-                    else id1 += " M" + x.mold + " = 0 , ";
+                    else id1 += " M" + x.mold + " = -1 , ";
                     if (action == 0) id2 += " M" + x.mold + " = " + x.reason + " , ";
                     else id2 += " M" + x.mold + " = -1 , ";
                     id3 += " M" + x.mold + " = -1 , ";
@@ -711,7 +720,7 @@ namespace ApiTiama
                 setted.ForEach(x =>
                 {
                     if (action == 0) id1 += " M" + x.mold + " = 1 , ";
-                    else id1 += " M" + x.mold + " = 0 , ";
+                    else id1 += " M" + x.mold + " = -1 , ";
                     if (action == 0) id2 += " M" + x.mold + " = " + x.reason + " , ";
                     else id2 += " M" + x.mold + " = -1 , ";
                     id3 += " M" + x.mold + " = -1 , ";
@@ -743,7 +752,7 @@ namespace ApiTiama
             }
             catch (Exception ex)
             {
-                ejectlog.Text += "<---- ОШИБКА выборки форм" + Environment.NewLine;
+                ejectlog.Text += "<---- ОШИБКА выборки форм" + ex.Message + Environment.NewLine;
             }
         }
 
@@ -757,7 +766,7 @@ namespace ApiTiama
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            this.Text = "М4 - 2" + Resources.LineControl+ " - резервная  v1.5";
+            this.Text = "М4 - 1" + Resources.LineControl+ " - основная  v1.6";
            
             t_scan.Enabled= true;
             t_60.Enabled= true; 
@@ -791,7 +800,7 @@ namespace ApiTiama
             var sql = @"select 
                 Input_1, Input_2, Input_3, Input_4, Input_5, Input_6, Input_7, Input_8 
                 from CPS" + Resources.Cech + ".[dbo].[Table_TG2]" +
-                " where Line = 4 ";
+                " where Line = 3 ";
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
             try
             {
@@ -959,7 +968,7 @@ namespace ApiTiama
                 var d024_14 = down.Where(q => q.sensorId == "42").Where(q => q.deffect == dict27chanel[5]).Where(q => q.mould == x).Sum(q => Convert.ToInt32(q.count));
                 var sb = downSbros.Where(q => q.mould == Convert.ToInt32(x)).FirstOrDefault();
 
-                sqlInstance = "INSERT INTO [CPS2].[dbo].[Line_32_temp] " +
+                sqlInstance = "INSERT INTO [CPS2].[dbo].[Line_31_temp] " +
                             "(Number_Mould, " +
                             "Deffect_213, " +
                             "Deffect_414, " +
@@ -1009,7 +1018,7 @@ namespace ApiTiama
                     SUM(CEJ),
                     SUM(CPA),
                     SUM(CES)
-                from [CPS2].[dbo].[Line_32_temp] 
+                from [CPS2].[dbo].[Line_31_temp] 
                 GROUP BY Number_mould
                     ";
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
@@ -1025,7 +1034,7 @@ namespace ApiTiama
                 while (reader.Read())
                 {
                     var  DT = DateTime.Now;
-                    sqlinsert += "INSERT INTO [CPS2].[dbo].[Line_32_count] " +
+                    sqlinsert += "INSERT INTO [CPS2].[dbo].[Line_31_count] " +
                                 "(Time, " +
                                 "Number_Mould, " +
                                 "Deffect_213, " +
@@ -1050,7 +1059,7 @@ namespace ApiTiama
                 command.ExecuteNonQuery();
 
                  //Чистим временную таблицу
-                  sql = "TRUNCATE TABLE [CPS2].[dbo].[Line_32_temp]";
+                  sql = "TRUNCATE TABLE [CPS2].[dbo].[Line_31_temp]";
                   new SqlCommand(sql, conn).ExecuteNonQuery();
             }
             catch (Exception ex)
