@@ -258,6 +258,13 @@ namespace ApiTiama
             }
             #endregion
 
+            #region Автоматическое обновление ПС на машине
+
+            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 0); // постановка
+            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 1); // снятие
+
+            #endregion
+
         }
 
         private void BackgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
@@ -442,17 +449,64 @@ namespace ApiTiama
             if(sended.Count() > 0)
             {
                 if(CreateAddEjectedMoldsXml(sended)) SendEjectToMashine(Resources.ip);
-                ejectlog.Text += "************** ОЖИДАЮ 10 СЕКУНД **************************" + Environment.NewLine;
-                Thread.Sleep(10000);
+                ejectlog.Text += "************** ОЖИДАЮ 5 СЕКУНД **************************" + Environment.NewLine;
+                Thread.Sleep(5000);
                 ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;
                 var getted = GetEjectedFromM1();
                 UpdateInDB(sended, getted, "[CPS2].[dbo].[Line_3_001_CES]", 1);
-
             } 
 
         }
 
         #region ОБРАБОТКА ПОСТАНОВКИ/СНЯТИЯ ПС
+
+        /*AddRemoveEject
+            Автоматическая постановка/снятие на сдув на М1
+            Входные параметры:
+                    - string TABLE - таблица в которой осуществлять поиск
+                    - int action - значения для поиска ( 0 и 1 ) - постановка или снятие со сдува
+            Выходные парамерты
+         */
+        private void AddRemoveEject(string table, int action)
+        {
+            ejectlog.Text += DateTime.Now.ToString("HH:mm:ss dd.MM.yy") +  " ----> Обработка ПС " + Environment.NewLine;
+            var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
+            var toEject = new List<EJ>();
+            conn.Open();
+            string what = action == 1 ? "СНЯТИЕ" : "ПОСТАНОВКА";
+            try
+            {
+                ejectlog.Text += "----> Обработка " + what +" на ПС " + Environment.NewLine;
+
+                var sql = "select * from " + table + " where  Id in (3,4)";
+                var command = new SqlCommand(sql, conn);
+
+                DataTable dt = new DataTable();
+                SqlDataAdapter da = new SqlDataAdapter(command);
+                da.Fill(dt);
+
+                toEject = dt.Rows[0].ItemArray.ToList().Select((val, ind) => new { Index = ind, Value = val }).Where(x => x.Index > 1 && Convert.ToInt32(x.Value) == action).Select(p => new EJ { mold = (p.Index - 2).ToString(), reason = dt.Rows[1].ItemArray[p.Index].ToString() }).ToList();
+
+                if (toEject.Count > 0)
+                {
+                    ejectlog.Text += "<---- Форм НАЙДЕНО: " + toEject.Count() + Environment.NewLine;
+                    CreateAddEjectedMoldsXml(toEject);
+                    SendEjectToMashine(Resources.ip);
+                    Thread.Sleep(5000);
+                    var getted = GetEjectedFromM1();
+                    UpdateInDB(toEject, getted, table, action);
+                }
+
+                ejectlog.Text += "<---- Формы на " + what + " не найдены" + Environment.NewLine;
+            }
+            catch (Exception ex)
+            {
+                ejectlog.Text += "<---- ОШИБКА обработки " + what + " на ПС: " + ex.Message + Environment.NewLine;
+            }
+
+            ejectlog.Text += DateTime.Now.ToString("HH:mm:ss dd.MM.yy") +  " <---- ПС обработан " + Environment.NewLine;
+        }
+
         /*GetDataForEject
             Формирует массив форм для поставновки/снятия со сдува
             Входные параметры:
@@ -501,9 +555,9 @@ namespace ApiTiama
                     - true - XML-файл сформирован и готов к загруке
                     - false - произошла ошибка, XML-файл НЕ готов к загрузке
          */
-        private bool CreateAddEjectedMoldsXml(List<EJ> add)
+        private bool CreateAddEjectedMoldsXml(List<EJ> add, bool reject = false)
         {
-            ejectlog.Text += "----> Начинаю формировать XML для загрузки" + Environment.NewLine;
+           // ejectlog.Text += "----> Начинаю формировать XML для загрузки" + Environment.NewLine;
             try
             {
                 string fileLoc = "addejectedmolds.xml";
@@ -522,7 +576,7 @@ namespace ApiTiama
                     XmlElement elem;
                     elem = doc.CreateElement("mold");
                     elem.SetAttribute("nb", x.mold);
-                    elem.SetAttribute("reason", x.reason);
+                    elem.SetAttribute("reason", reject ? "0" : x.reason);
                     node.AppendChild(elem);
                     // -->
                 });
@@ -530,11 +584,11 @@ namespace ApiTiama
                 //сохраняем
                 doc.Save("ejload.xml");
                 // --
-                ejectlog.Text += "<---- XML СФОРМИРОВАН. Содержит - " + add.Count() + "  форм " + Environment.NewLine;
+               // ejectlog.Text += "<---- XML СФОРМИРОВАН. Содержит - " + add.Count() + "  форм " + Environment.NewLine;
             }
             catch(Exception ex)
             {
-                ejectlog.Text += "<---- Ошибка формирования XML" + Environment.NewLine;
+               // ejectlog.Text += "<---- Ошибка формирования XML" + Environment.NewLine;
                 MessageBox.Show("ОШИБКА создания XML для постановки на принудительный сдув: " + ex.Message);
                 return false;
             }
@@ -551,7 +605,7 @@ namespace ApiTiama
          */
         private void SendEjectToMashine(string ip)
         {
-            ejectlog.Text += "----> Начинаю отправлять запрос на ПС" + Environment.NewLine;
+            //ejectlog.Text += "----> Начинаю отправлять запрос на ПС" + Environment.NewLine;
             var _url = "http://"+ip+"/WSTM11/Service.asmx";
             var _action = "http://www.tiama-inspection.com/AddEjectedMolds";
 
@@ -562,7 +616,7 @@ namespace ApiTiama
             IAsyncResult asyncResult = webRequest.BeginGetResponse(null, null);
 
             asyncResult.AsyncWaitHandle.WaitOne();
-            ejectlog.Text += "<---- Запрос отправлен" + Environment.NewLine;
+            //ejectlog.Text += "<---- Запрос отправлен" + Environment.NewLine;
 
             string soapResult;
             using (WebResponse webResponse = webRequest.EndGetResponse(asyncResult))
@@ -623,7 +677,7 @@ namespace ApiTiama
                     - List<EJ> SENDED - список форм с указанием причины сдува ОТПРАВЛЕННЫХ на машину (полученных из БД, сформированных в xml и отправленных через SOAP)
                     - List<EJ> GETTED - список форм с указанием причины сдува ПОЛУЧЕННЫХ с машины (результат выполнения функции GetEjectedFromM1)
                     - string TABLE - таблица в которой обновляются данные
-                    - string ACTION - обработка постановки или снятия с ПС (1 - снятие, 0 - постановка) 
+                    - string ACTION - обработка постановки или снятия с ПС (0 или 1) - снятие или постановка 
             Выходные парамерты
 
          */
