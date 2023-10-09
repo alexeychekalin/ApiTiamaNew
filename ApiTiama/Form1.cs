@@ -67,14 +67,14 @@ namespace ApiTiama
                     toolStripStatusLabel1.Text = "Машина на отдыхе, вернула пустой ответ";
                     richTextBox2.Text += DateTime.Now + " - " + "Ответ COUNT пустой"+Environment.NewLine;
                     ejectlog.Text = "";
-                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 0); // постановка
-                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 1); // снятие
+                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 0); // постановка
+                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 1); // снятие
                     
                     return;
                 }
 
                 #region Записываем -1 в таблицу
-                sql = "UPDATE [Line_3_001_CES] SET ";
+                sql = "UPDATE [Line_3_001_CES_1] SET ";
 
                 for (int i = 0; i < 100; i++)
                 {
@@ -95,7 +95,7 @@ namespace ApiTiama
 
                 var mcf = _getMolds.GetElementsByTagName("Mold");
 
-                sql = "UPDATE [Line_3_001_CES] SET ";
+                sql = "UPDATE [Line_3_001_CES_1] SET ";
 
                 if(mcf.Count != 0)
                 {
@@ -121,8 +121,8 @@ namespace ApiTiama
                 richTextBox2.Text += DateTime.Now + " - " + sql + Environment.NewLine;
             }
             ejectlog.Text = "";
-            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 0); // постановка
-            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 1); // снятие
+            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 0); // постановка
+            AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 1); // снятие
 
             #region Обновляем сдув
             if (e.Result == null) { 
@@ -132,7 +132,7 @@ namespace ApiTiama
                 // Запишем в таблицу FALSE
                 foreach (var item in preRead)
                 {
-                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
                     var commandLocal = new SqlCommand(sqlLocal, conn);
                     commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
                     commandLocal.Parameters.AddWithValue("@p2", 0);
@@ -154,7 +154,7 @@ namespace ApiTiama
                 // Запишем в таблицу FALSE
                 foreach (var item in preRead)
                 {
-                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
                     var commandLocal = new SqlCommand(sqlLocal, conn);
                     commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
                     commandLocal.Parameters.AddWithValue("@p2", 0);
@@ -206,14 +206,14 @@ namespace ApiTiama
                 // Сравним файл с ответом и выберем существующие в ответе формы
                 var result2 = ejected.Where(x => !preRead.Any(n => n == x.mold)).ToList();
 
-                var id1 = "UPDATE [Line_3_001_CES] SET ";
+                var id1 = "UPDATE [Line_3_001_CES_1] SET ";
 
                 if (result.Count != 0)
                 {
                     // Запишем в таблицу FALSE
                     foreach (var item in result)
                     {
-                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
+                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
                         var commandLocal = new SqlCommand(sqlLocal, conn);
                         commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
                         commandLocal.Parameters.AddWithValue("@p2", 0);
@@ -229,10 +229,10 @@ namespace ApiTiama
 
                 if (result2.Count != 0)
                 {
-                    sql = "UPDATE [Line_3_001_CES] SET ";
+                    sql = "UPDATE [Line_3_001_CES_1] SET ";
                     foreach (var item in result2)
                     {
-                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould, Reason) VALUES (@p1, @p2, @p3, @p4) ";
+                        var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould, Reason) VALUES (@p1, @p2, @p3, @p4) ";
                         var commandLocal = new SqlCommand(sqlLocal, conn);
                         commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
                         commandLocal.Parameters.AddWithValue("@p2", 1);
@@ -453,7 +453,7 @@ namespace ApiTiama
                 5) UpdateInDB(sended,getted, TABLE, 0) - обновляем данные в таблицах и заверщаем работу
              
              */
-            var sended = GetDataForEject("[CPS2].[dbo].[Line_3_001_CES]", 1);
+            var sended = GetDataForEject("[CPS2].[dbo].[Line_3_001_CES_1]", 1);
             if(sended.Count() > 0)
             {
                 if(CreateAddEjectedMoldsXml(sended, 1)) SendEjectToMashine(Resources.ip);
@@ -461,7 +461,7 @@ namespace ApiTiama
                 Thread.Sleep(5000);
                 ejectlog.Text += "^^^^^^^^^^^^^^^ ПРОДОЛЖАЕМ ^^^^^^^^^^^^^^^" + Environment.NewLine;
                 var getted = GetEjectedFromM1();
-                UpdateInDB(sended, getted, "[CPS2].[dbo].[Line_3_001_CES]", 1);
+                UpdateInDB(sended, getted, "[CPS2].[dbo].[Line_3_001_CES_1]", 1);
             } 
 
         }
@@ -766,7 +766,7 @@ namespace ApiTiama
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            this.Text = "М4 - 1" + Resources.LineControl+ " - основная  v1.6";
+            this.Text = "М4 - " + Resources.LineControl+ " - дублер  v1.6";
            
             t_scan.Enabled= true;
             t_60.Enabled= true; 
@@ -800,7 +800,7 @@ namespace ApiTiama
             var sql = @"select 
                 Input_1, Input_2, Input_3, Input_4, Input_5, Input_6, Input_7, Input_8 
                 from CPS" + Resources.Cech + ".[dbo].[Table_TG2]" +
-                " where Line = 3 ";
+                " where Line = 4 ";
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
             try
             {
@@ -968,7 +968,7 @@ namespace ApiTiama
                 var d024_14 = down.Where(q => q.sensorId == "42").Where(q => q.deffect == dict27chanel[5]).Where(q => q.mould == x).Sum(q => Convert.ToInt32(q.count));
                 var sb = downSbros.Where(q => q.mould == Convert.ToInt32(x)).FirstOrDefault();
 
-                sqlInstance = "INSERT INTO [CPS2].[dbo].[Line_31_temp] " +
+                sqlInstance = "INSERT INTO [CPS2].[dbo].[Line_32_temp] " +
                             "(Number_Mould, " +
                             "Deffect_213, " +
                             "Deffect_414, " +
@@ -1018,7 +1018,7 @@ namespace ApiTiama
                     SUM(CEJ),
                     SUM(CPA),
                     SUM(CES)
-                from [CPS2].[dbo].[Line_31_temp] 
+                from [CPS2].[dbo].[Line_32_temp] 
                 GROUP BY Number_mould
                     ";
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
@@ -1034,7 +1034,7 @@ namespace ApiTiama
                 while (reader.Read())
                 {
                     var  DT = DateTime.Now;
-                    sqlinsert += "INSERT INTO [CPS2].[dbo].[Line_31_count] " +
+                    sqlinsert += "INSERT INTO [CPS2].[dbo].[Line_32_count] " +
                                 "(Time, " +
                                 "Number_Mould, " +
                                 "Deffect_213, " +
@@ -1059,7 +1059,7 @@ namespace ApiTiama
                 command.ExecuteNonQuery();
 
                  //Чистим временную таблицу
-                  sql = "TRUNCATE TABLE [CPS2].[dbo].[Line_31_temp]";
+                  sql = "TRUNCATE TABLE [CPS2].[dbo].[Line_32_temp]";
                   new SqlCommand(sql, conn).ExecuteNonQuery();
             }
             catch (Exception ex)

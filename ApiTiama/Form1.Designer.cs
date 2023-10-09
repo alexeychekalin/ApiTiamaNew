@@ -39,10 +39,6 @@ namespace ApiTiama
             this.button4 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
-            this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.t_scan = new System.Windows.Forms.Timer(this.components);
             this.t_60 = new System.Windows.Forms.Timer(this.components);
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
@@ -52,15 +48,18 @@ namespace ApiTiama
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
             this.ejectlog = new System.Windows.Forms.RichTextBox();
+            this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(1, 53);
+            this.richTextBox1.Location = new System.Drawing.Point(1, 3);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.Size = new System.Drawing.Size(298, 389);
             this.richTextBox1.TabIndex = 4;
@@ -68,9 +67,9 @@ namespace ApiTiama
             // 
             // button4
             // 
-            this.button4.Location = new System.Drawing.Point(20, 14);
+            this.button4.Location = new System.Drawing.Point(598, 462);
             this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(132, 33);
+            this.button4.Size = new System.Drawing.Size(75, 23);
             this.button4.TabIndex = 6;
             this.button4.Text = "MX";
             this.button4.UseVisualStyleBackColor = true;
@@ -78,9 +77,9 @@ namespace ApiTiama
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(158, 14);
+            this.button5.Location = new System.Drawing.Point(679, 433);
             this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(132, 33);
+            this.button5.Size = new System.Drawing.Size(75, 23);
             this.button5.TabIndex = 7;
             this.button5.Text = "Parse";
             this.button5.UseVisualStyleBackColor = true;
@@ -102,7 +101,7 @@ namespace ApiTiama
             this.Column3,
             this.Column1,
             this.Column4});
-            this.dataGridView1.Location = new System.Drawing.Point(301, 53);
+            this.dataGridView1.Location = new System.Drawing.Point(300, 3);
             this.dataGridView1.Name = "dataGridView1";
             dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle5.BackColor = System.Drawing.SystemColors.Control;
@@ -113,38 +112,8 @@ namespace ApiTiama
             dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
             this.dataGridView1.RowHeadersDefaultCellStyle = dataGridViewCellStyle5;
             this.dataGridView1.RowHeadersVisible = false;
-            this.dataGridView1.Size = new System.Drawing.Size(288, 389);
+            this.dataGridView1.Size = new System.Drawing.Size(251, 389);
             this.dataGridView1.TabIndex = 11;
-            // 
-            // Column2
-            // 
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.Column2.DefaultCellStyle = dataGridViewCellStyle2;
-            this.Column2.HeaderText = "Форма";
-            this.Column2.Name = "Column2";
-            this.Column2.Width = 65;
-            // 
-            // Column3
-            // 
-            this.Column3.HeaderText = "Дефект";
-            this.Column3.Name = "Column3";
-            this.Column3.Width = 90;
-            // 
-            // Column1
-            // 
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.Column1.DefaultCellStyle = dataGridViewCellStyle3;
-            this.Column1.HeaderText = "Кол-во";
-            this.Column1.Name = "Column1";
-            this.Column1.Width = 50;
-            // 
-            // Column4
-            // 
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.Column4.DefaultCellStyle = dataGridViewCellStyle4;
-            this.Column4.HeaderText = "SensorID";
-            this.Column4.Name = "Column4";
-            this.Column4.Width = 80;
             // 
             // t_scan
             // 
@@ -159,9 +128,9 @@ namespace ApiTiama
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusLabel1});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 548);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 496);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(1124, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(853, 22);
             this.statusStrip1.TabIndex = 12;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -173,25 +142,25 @@ namespace ApiTiama
             // 
             // richTextBox2
             // 
-            this.richTextBox2.Location = new System.Drawing.Point(1, 444);
+            this.richTextBox2.Location = new System.Drawing.Point(1, 396);
             this.richTextBox2.Name = "richTextBox2";
-            this.richTextBox2.Size = new System.Drawing.Size(591, 99);
+            this.richTextBox2.Size = new System.Drawing.Size(550, 99);
             this.richTextBox2.TabIndex = 13;
             this.richTextBox2.Text = "";
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(344, 19);
+            this.button1.Location = new System.Drawing.Point(598, 404);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 14;
-            this.button1.Text = "EjectedMolds";
+            this.button1.Text = "Ejected";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(453, 19);
+            this.button2.Location = new System.Drawing.Point(598, 433);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 15;
@@ -199,31 +168,50 @@ namespace ApiTiama
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
-            // button3
-            // 
-            this.button3.Location = new System.Drawing.Point(671, 19);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(121, 23);
-            this.button3.TabIndex = 16;
-            this.button3.Text = "Change AddEjMolds";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
-            // 
             // ejectlog
             // 
-            this.ejectlog.Location = new System.Drawing.Point(671, 53);
+            this.ejectlog.Location = new System.Drawing.Point(552, 3);
             this.ejectlog.Name = "ejectlog";
-            this.ejectlog.Size = new System.Drawing.Size(431, 389);
+            this.ejectlog.Size = new System.Drawing.Size(297, 389);
             this.ejectlog.TabIndex = 17;
             this.ejectlog.Text = "";
+            // 
+            // Column2
+            // 
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.Column2.DefaultCellStyle = dataGridViewCellStyle2;
+            this.Column2.HeaderText = "Form";
+            this.Column2.Name = "Column2";
+            this.Column2.Width = 65;
+            // 
+            // Column3
+            // 
+            this.Column3.HeaderText = "Defect";
+            this.Column3.Name = "Column3";
+            this.Column3.Width = 50;
+            // 
+            // Column1
+            // 
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.Column1.DefaultCellStyle = dataGridViewCellStyle3;
+            this.Column1.HeaderText = "Count";
+            this.Column1.Name = "Column1";
+            this.Column1.Width = 50;
+            // 
+            // Column4
+            // 
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.Column4.DefaultCellStyle = dataGridViewCellStyle4;
+            this.Column4.HeaderText = "SensorID";
+            this.Column4.Name = "Column4";
+            this.Column4.Width = 80;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1124, 570);
+            this.ClientSize = new System.Drawing.Size(853, 518);
             this.Controls.Add(this.ejectlog);
-            this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.richTextBox2);
@@ -232,6 +220,7 @@ namespace ApiTiama
             this.Controls.Add(this.button5);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.richTextBox1);
+            this.MaximizeBox = false;
             this.Name = "Form1";
             this.ShowIcon = false;
             this.Text = "Form1";
@@ -251,10 +240,6 @@ namespace ApiTiama
         private System.Windows.Forms.DataGridView dataGridView1;
         private System.Windows.Forms.Timer t_scan;
         private System.Windows.Forms.Timer t_60;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Column2;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Column3;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Column1;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Column4;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.StatusStrip statusStrip1;
@@ -262,8 +247,11 @@ namespace ApiTiama
         private System.Windows.Forms.RichTextBox richTextBox2;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.Button button3;
         private System.Windows.Forms.RichTextBox ejectlog;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Column2;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Column3;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Column1;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Column4;
     }
 }
 
