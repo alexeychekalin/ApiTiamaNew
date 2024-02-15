@@ -127,15 +127,15 @@
     <value>3</value>
   </data>
   <data name="Password" xml:space="preserve">
-    <value>A202asd</value>
+    <value>A212asd</value>
   </data>
   <data name="secure" xml:space="preserve">
     <value>false</value>
   </data>
   <data name="Server" xml:space="preserve">
-    <value>WIN-997413F00JC</value>
+    <value>SERVERISKRA</value>
   </data>
   <data name="User" xml:space="preserve">
-    <value>myuser</value>
+    <value>sa</value>
   </data>
 </root>

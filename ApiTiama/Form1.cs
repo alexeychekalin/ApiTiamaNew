@@ -14,7 +14,7 @@ using System.Xml.Linq;
 using System.Data;
 using System.Threading;
 
-//
+//Чтение данных с контрольной машины М4 -----2023г.
 namespace ApiTiama
 {
     public partial class Form1 : Form
@@ -54,23 +54,19 @@ namespace ApiTiama
 
         private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-
-
             var sql = "";
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
             try
             {
                 conn.Open();
-
                 if (_getMolds.GetElementsByTagName("Inspected")[0] == null)
                 {
                     toolStripStatusLabel1.Text = "Машина на отдыхе, вернула пустой ответ";
                     richTextBox2.Text += DateTime.Now + " - " + "Ответ COUNT пустой"+Environment.NewLine;
                     ejectlog.Text = "";
-                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 0); // постановка
-                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 1); // снятие
-                    
-                    return;
+                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 0); // постановка
+                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 1); // снятие
+                    //return;
                 }
 
                 #region Записываем -1 в таблицу
@@ -85,10 +81,7 @@ namespace ApiTiama
 
                 var command = new SqlCommand(sql, conn);
                 command.Parameters.AddWithValue("@time", DateTime.Now);
-
                 command.ExecuteNonQuery();
-
-                toolStripStatusLabel1.Text = "В таблицу записаны -1";
                 #endregion
 
                 #region Обновляем установленные формы
@@ -109,11 +102,8 @@ namespace ApiTiama
 
                     command = new SqlCommand(sql, conn);
                     command.ExecuteNonQuery();
-
-                    toolStripStatusLabel1.Text = "Обновлены данные по установленным формам";
                 }
                 #endregion
-
             }
             catch (Exception ex)
             {
@@ -125,7 +115,8 @@ namespace ApiTiama
             AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 1); // снятие
 
             #region Обновляем сдув
-            if (e.Result == null) { 
+            if (e.Result == null)
+            { 
                 toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
                 var preRead = File.ReadAllLines("buffer.txt").ToList();
 
@@ -147,7 +138,8 @@ namespace ApiTiama
            
             var ejected = (List<EJ>)e.Result;
 
-            if (ejected.Count == 0) { 
+            if (ejected.Count == 0) 
+            { 
                 toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
                 var preRead = File.ReadAllLines("buffer.txt").ToList();
 
@@ -171,19 +163,10 @@ namespace ApiTiama
             {
                 toolStripStatusLabel1.Text = "Обновляю сдув, c машины поступили данные. Форм в ответе:" + ejected.Count;
 
-                /*
-
                 var id1 = "UPDATE [Line_3_001_CES] SET ";
 
                 ejected.ForEach(x =>
                 {
-                    var sqlLocal = "INSERT INTO [Line_3_001_Report_CES] (Time, Operation, Num_Mould) VALUES (@p1, @p2, @p3) ";
-                    var commandLocal = new SqlCommand(sqlLocal, conn);
-                    commandLocal.Parameters.AddWithValue("@p1", DateTime.Now);
-                    commandLocal.Parameters.AddWithValue("@p2", 1);
-                    commandLocal.Parameters.AddWithValue("@p3", x.mold);
-                    commandLocal.ExecuteNonQuery();
-
                     id1 += " M" + x.mold + " = 1 , ";
                 });
 
@@ -191,22 +174,19 @@ namespace ApiTiama
                 {
                     var command = new SqlCommand(id1.Remove(id1.Length - 2) + " WHERE Id = 1 ", conn);
                     command.ExecuteNonQuery();
+                    toolStripStatusLabel1.Text = "Сделана запись в БД CES данных о ПС в авт.режиме";
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("ОШИБКА! Запись в БД данных о ПС в авт.режиме: " + ex.Message);
                 }
-                */
                 
-                toolStripStatusLabel1.Text = "Обновляю сдув из файла, на сдуве есть данные";
-                // read file to get previous update 
-                var preRead = File.ReadAllLines("buffer.txt").ToList();
+
+                 var preRead = File.ReadAllLines("buffer.txt").ToList();
                 // Сравним файл с ответом и выберем отсутствующие в ответе формы
                 var result = preRead.Where(x => !ejected.Any(n => n.mold == x)).ToList();
                 // Сравним файл с ответом и выберем существующие в ответе формы
                 var result2 = ejected.Where(x => !preRead.Any(n => n == x.mold)).ToList();
-
-                var id1 = "UPDATE [Line_3_001_CES_1] SET ";
 
                 if (result.Count != 0)
                 {
@@ -219,8 +199,6 @@ namespace ApiTiama
                         commandLocal.Parameters.AddWithValue("@p2", 0);
                         commandLocal.Parameters.AddWithValue("@p3", item);
                         commandLocal.ExecuteNonQuery();
-
-                        id1 += " M" + item + " = 0 , ";
                     }
                 }
 
@@ -229,7 +207,6 @@ namespace ApiTiama
 
                 if (result2.Count != 0)
                 {
-                    sql = "UPDATE [Line_3_001_CES_1] SET ";
                     foreach (var item in result2)
                     {
                         var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould, Reason) VALUES (@p1, @p2, @p3, @p4) ";
@@ -239,12 +216,7 @@ namespace ApiTiama
                         commandLocal.Parameters.AddWithValue("@p3", item.mold);
                         commandLocal.Parameters.AddWithValue("@p4", item.reason);
                         commandLocal.ExecuteNonQuery();
-
-                        sql += " M" + item.mold + " = 1 ,";
                     }
-
-                    sql = sql.Remove(sql.Length - 1); // удаляем последнюю запятую
-                    sql += " WHERE id = 1";
 
                     var command = new SqlCommand(sql, conn);
                     command.ExecuteNonQuery();
@@ -266,13 +238,6 @@ namespace ApiTiama
                 conn.Close();
             }
             #endregion
-
-            #region Автоматическое обновление ПС на машине
-
-
-
-            #endregion
-
         }
 
         private void BackgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
@@ -409,7 +374,6 @@ namespace ApiTiama
                 soapEnvelopeXml.Save(stream);
             }
         }
-
 
         //Постановка и снятие с принудительного сдува
         private void button2_Click(object sender, EventArgs e)
@@ -549,7 +513,7 @@ namespace ApiTiama
 
                 ejectlog.Text += "<---- Формы не найдены, ЗАВЕРШАЮ работу" + Environment.NewLine;
             }
-            catch (Exception ex)
+            catch
             {
                 ejectlog.Text += "<---- ОШИБКА выборки форм" + Environment.NewLine;
             }
@@ -601,7 +565,6 @@ namespace ApiTiama
                 MessageBox.Show("ОШИБКА создания XML для постановки на принудительный сдув: " + ex.Message);
                 return false;
             }
-
             return true;
         }
 
@@ -766,7 +729,7 @@ namespace ApiTiama
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            this.Text = "М4 - " + Resources.LineControl+ " - дублер  v1.6";
+            this.Text = "М4 - " + Resources.LineControl+ " - основная  v1.6";
            
             t_scan.Enabled= true;
             t_60.Enabled= true; 
@@ -823,7 +786,6 @@ namespace ApiTiama
             //In_8 = (int)reader["Input_8"];
         }
         #endregion
-
 
         #region Собираем данные каждые 5 минут
         private void request()

@@ -88,7 +88,7 @@ namespace ApiTiama.Properties {
         }
         
         /// <summary>
-        ///   Ищет локализованную строку, похожую на A202asd.
+        ///   Ищет локализованную строку, похожую на A212asd.
         /// </summary>
         internal static string Password {
             get {
@@ -106,7 +106,7 @@ namespace ApiTiama.Properties {
         }
         
         /// <summary>
-        ///   Ищет локализованную строку, похожую на WIN-997413F00JC.
+        ///   Ищет локализованную строку, похожую на SERVERISKRA.
         /// </summary>
         internal static string Server {
             get {
@@ -115,7 +115,7 @@ namespace ApiTiama.Properties {
         }
         
         /// <summary>
-        ///   Ищет локализованную строку, похожую на myuser.
+        ///   Ищет локализованную строку, похожую на sa.
         /// </summary>
         internal static string User {
             get {
