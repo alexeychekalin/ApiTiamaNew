@@ -64,9 +64,7 @@ namespace ApiTiama
                     toolStripStatusLabel1.Text = "Машина на отдыхе, вернула пустой ответ";
                     richTextBox2.Text += DateTime.Now + " - " + "Ответ COUNT пустой"+Environment.NewLine;
                     ejectlog.Text = "";
-                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 0); // постановка
-                    AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES]", 1); // снятие
-                    //return;
+                    return;
                 }
 
                 #region Записываем -1 в таблицу
@@ -662,7 +660,8 @@ namespace ApiTiama
             var id3 = "UPDATE " + table + " SET ";
             var id4 = "UPDATE " + table + " SET ";
             var notSet = sended.Except(getted);
-            if(notSet.Count() == 0 || action == 1)
+            //if(notSet.Count() == 0 || action == 1)
+            if(notSet.Count() == 0)
             {
                 ejectlog.Text += "       Все формы были поставлены на " + whatToDo + ", формирую и отправляю запрос" + Environment.NewLine;
                 sended.ForEach(x =>
