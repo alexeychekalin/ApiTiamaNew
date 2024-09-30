@@ -58,7 +58,7 @@ namespace ApiTiama
         private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             logger.Trace("START BG_woker_complete");
-            logger.Warn(_getMolds.ToString());
+            logger.Warn(_getMolds.OuterXml);
             var sql = "";
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
             try
@@ -272,11 +272,11 @@ namespace ApiTiama
         {
             var m = new ServiceTM11SoapClient();
             XmlDocument docXML = new XmlDocument(); // XML-документ
-            var ans = m.EjectedMolds().InnerXml;
-            ans = "<xml>" + ans + "</xml>";
-            docXML.LoadXml(ans); // загрузить XML
+           // var ans = m.EjectedMolds().InnerXml;
+            //ans = "<xml>" + ans + "</xml>";
+           // docXML.LoadXml(ans); // загрузить XML
             
-           // docXML.Load("ej.xml");
+            docXML.Load("ej.xml");
 
             if (docXML.GetElementsByTagName("xml")[0].ChildNodes.Count == 0)
             {
@@ -583,7 +583,7 @@ namespace ApiTiama
 
                 //сохраняем
                 doc.Save("ejload.xml");
-                logger.Warn(doc.ToString());
+                logger.Warn(doc.OuterXml);
                 // --
                // ejectlog.Text += "<---- XML СФОРМИРОВАН. Содержит - " + add.Count() + "  форм " + Environment.NewLine;
             }
