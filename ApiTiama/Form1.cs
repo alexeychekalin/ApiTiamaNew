@@ -13,12 +13,15 @@ using System.ComponentModel;
 using System.Xml.Linq;
 using System.Data;
 using System.Threading;
+using NLog;
 
 //Чтение данных с контрольной машины М4 -----2023г.
 namespace ApiTiama
 {
     public partial class Form1 : Form
     {
+        private static Logger logger = LogManager.GetCurrentClassLogger();
+
         int In_1, In_2, In_3, In_4, In_5, In_6, In_7, In_8;
         DateTime DT = new DateTime();
 
@@ -54,6 +57,8 @@ namespace ApiTiama
 
         private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            logger.Trace("START BG_woker_complete");
+            logger.Warn(_getMolds.ToString());
             var sql = "";
             var conn = DbWalker.GetConnection(Resources.Server, Resources.User, Resources.Password, Resources.secure, "CPS" + Resources.Cech);
             try
@@ -64,6 +69,7 @@ namespace ApiTiama
                     toolStripStatusLabel1.Text = "Машина на отдыхе, вернула пустой ответ";
                     richTextBox2.Text += DateTime.Now + " - " + "Ответ COUNT пустой"+Environment.NewLine;
                     ejectlog.Text = "";
+                    logger.Error("EMPTY COUNT RESULT");
                     return;
                 }
 
@@ -80,16 +86,17 @@ namespace ApiTiama
                 var command = new SqlCommand(sql, conn);
                 command.Parameters.AddWithValue("@time", DateTime.Now);
                 command.ExecuteNonQuery();
+                logger.Trace("WRITE -1 INTO [Line_3_001_CES_1] WITH ID=1");
                 #endregion
 
                 #region Обновляем установленные формы
 
                 var mcf = _getMolds.GetElementsByTagName("Mold");
 
-                sql = "UPDATE [Line_3_001_CES_1] SET ";
-
                 if(mcf.Count != 0)
                 {
+                    logger.Trace("UPDATE MOLDS FROM XML MASHINE");
+                    sql = "UPDATE [Line_3_001_CES_1] SET ";
                     foreach (XmlNode tag in mcf)
                     {
                         sql += " M" + tag.Attributes.GetNamedItem("id").InnerText + " = 0 ,";
@@ -100,6 +107,7 @@ namespace ApiTiama
 
                     command = new SqlCommand(sql, conn);
                     command.ExecuteNonQuery();
+                    logger.Info(sql);
                 }
                 #endregion
             }
@@ -109,15 +117,18 @@ namespace ApiTiama
                 richTextBox2.Text += DateTime.Now + " - " + sql + Environment.NewLine;
             }
             ejectlog.Text = "";
+            logger.Trace("SET SDUV ON MASHINE");
             AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 0); // постановка
+            logger.Trace("UNSET SDUV ON MASHINE");
             AddRemoveEject("[CPS2].[dbo].[Line_3_001_CES_1]", 1); // снятие
 
             #region Обновляем сдув
             if (e.Result == null)
-            { 
+            {
+                logger.Trace("UPDATE [Line_3_001_Report_CES_1] FROM FILE");
                 toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
                 var preRead = File.ReadAllLines("buffer.txt").ToList();
-
+                logger.Info(string.Join(",", preRead));
                 // Запишем в таблицу FALSE
                 foreach (var item in preRead)
                 {
@@ -127,20 +138,24 @@ namespace ApiTiama
                     commandLocal.Parameters.AddWithValue("@p2", 0);
                     commandLocal.Parameters.AddWithValue("@p3", item);
                     commandLocal.ExecuteNonQuery();
+                    logger.Info(sqlLocal);
                 }
-
                 // очистим файл
                 File.WriteAllText("buffer.txt", string.Empty);
+                logger.Trace("CHECK ON EMPTY FILE");
+                preRead = File.ReadAllLines("buffer.txt").ToList();
+                logger.Info(string.Join(",", preRead));
                 return;
             }
            
             var ejected = (List<EJ>)e.Result;
 
             if (ejected.Count == 0) 
-            { 
+            {
+                logger.Trace("UPDATE [Line_3_001_Report_CES_1] FROM FILE eject.Count == 0 (line 155)");
                 toolStripStatusLabel1.Text = "Обновляю сдув из файла, ответ пуст";
                 var preRead = File.ReadAllLines("buffer.txt").ToList();
-
+                logger.Info(string.Join(",", preRead));
                 // Запишем в таблицу FALSE
                 foreach (var item in preRead)
                 {
@@ -154,11 +169,15 @@ namespace ApiTiama
 
                 // очистим файл
                 File.WriteAllText("buffer.txt", string.Empty);
+                logger.Trace("CHECK ON EMPTY FILE");
+                preRead = File.ReadAllLines("buffer.txt").ToList();
+                logger.Info(string.Join(",", preRead));
                 return;
             }
 
             try
             {
+                logger.Trace("UPDATE [Line_3_001_CES] MASHINE SEND NOT NULL (line 180)");
                 toolStripStatusLabel1.Text = "Обновляю сдув, c машины поступили данные. Форм в ответе:" + ejected.Count;
 
                 var id1 = "UPDATE [Line_3_001_CES] SET ";
@@ -178,16 +197,20 @@ namespace ApiTiama
                 {
                     MessageBox.Show("ОШИБКА! Запись в БД данных о ПС в авт.режиме: " + ex.Message);
                 }
-                
+                logger.Info(id1.Remove(id1.Length - 2) + " WHERE Id = 1 ");
 
-                 var preRead = File.ReadAllLines("buffer.txt").ToList();
+                logger.Trace("READ FILE");
+                var preRead = File.ReadAllLines("buffer.txt").ToList();
                 // Сравним файл с ответом и выберем отсутствующие в ответе формы
                 var result = preRead.Where(x => !ejected.Any(n => n.mold == x)).ToList();
                 // Сравним файл с ответом и выберем существующие в ответе формы
                 var result2 = ejected.Where(x => !preRead.Any(n => n == x.mold)).ToList();
 
+                logger.Info(string.Join(",", preRead));
+
                 if (result.Count != 0)
                 {
+                    logger.Trace("FORMS NOT IN ANSWER");
                     // Запишем в таблицу FALSE
                     foreach (var item in result)
                     {
@@ -197,6 +220,7 @@ namespace ApiTiama
                         commandLocal.Parameters.AddWithValue("@p2", 0);
                         commandLocal.Parameters.AddWithValue("@p3", item);
                         commandLocal.ExecuteNonQuery();
+                        logger.Info(commandLocal.CommandText);
                     }
                 }
 
@@ -205,6 +229,7 @@ namespace ApiTiama
 
                 if (result2.Count != 0)
                 {
+                    logger.Trace("FORMS IN ANSWER");
                     foreach (var item in result2)
                     {
                         var sqlLocal = "INSERT INTO [Line_3_001_Report_CES_1] (Time, Operation, Num_Mould, Reason) VALUES (@p1, @p2, @p3, @p4) ";
@@ -214,6 +239,7 @@ namespace ApiTiama
                         commandLocal.Parameters.AddWithValue("@p3", item.mold);
                         commandLocal.Parameters.AddWithValue("@p4", item.reason);
                         commandLocal.ExecuteNonQuery();
+                        logger.Info(commandLocal.CommandText);
                     }
 
                     var command = new SqlCommand(sql, conn);
@@ -221,8 +247,11 @@ namespace ApiTiama
 
                     toolStripStatusLabel1.Text = "Обновлены данные по сдуву";
                 }
+                logger.Trace("UPDATE FILE");
                 // обновим файл
                 ejected.ForEach(x => File.AppendAllText("buffer.txt", x.mold + Environment.NewLine));
+                preRead = File.ReadAllLines("buffer.txt").ToList();
+                logger.Info(string.Join(",", preRead));
 
             }
             catch (Exception ex)
@@ -236,6 +265,7 @@ namespace ApiTiama
                 conn.Close();
             }
             #endregion
+            logger.Trace("END BG_woker_complete");
         }
 
         private void BackgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
@@ -309,7 +339,6 @@ namespace ApiTiama
         int[] sqlValues = Enumerable.Repeat(0, 5).ToArray();
 
         
-
         private void button4_Click(object sender, EventArgs e)
         {
             richTextBox1.Clear();
@@ -554,6 +583,7 @@ namespace ApiTiama
 
                 //сохраняем
                 doc.Save("ejload.xml");
+                logger.Warn(doc.ToString());
                 // --
                // ejectlog.Text += "<---- XML СФОРМИРОВАН. Содержит - " + add.Count() + "  форм " + Environment.NewLine;
             }
@@ -601,7 +631,8 @@ namespace ApiTiama
                 ejectlog.Text += "****************************************" + Environment.NewLine;
                 ejectlog.Text += "<---- Конец ответа" + Environment.NewLine;
             }
-            
+            logger.Trace("XML SEND TO MASHINE");
+            logger.Debug(soapResult);
         }
 
         /* GetEjectedFromM1
@@ -613,6 +644,7 @@ namespace ApiTiama
          */
         private List<EJ> GetEjectedFromM1()
         {
+            logger.Trace("GET MOLDS ON MASHINE AFTER REQUEST");
             ejectlog.Text += "----> Начинаю получать данные по формам на ПС" + Environment.NewLine;
             var m = new ServiceTM11SoapClient();
             XmlDocument docXML = new XmlDocument(); // XML-документ
@@ -639,6 +671,7 @@ namespace ApiTiama
                 ejectlog.Text += "<---- Данные получены, форм в ответе - " + ej.Count() + Environment.NewLine;
                 return ej;
             }
+            logger.Debug(docXML.ToString());
         }
 
         /* UpdateInDB
@@ -653,6 +686,7 @@ namespace ApiTiama
          */
         private void UpdateInDB(List<EJ> sended, List<EJ> getted, string table, int action )
         {
+            logger.Trace("UPDATE DATA IN DB: " + table);
             string whatToDo = action == 1 ? " СНЯТИЕ " : " ПОСТАНОВКА ";
             ejectlog.Text += "----> " + whatToDo + " Начинаю обновлять данные в БД"  + Environment.NewLine;
             var id1 = "UPDATE " + table + " SET ";
@@ -663,6 +697,7 @@ namespace ApiTiama
             //if(notSet.Count() == 0 || action == 1)
             if(notSet.Count() == 0)
             {
+                logger.Trace("ALL FORMS SETTED");
                 ejectlog.Text += "       Все формы были поставлены на " + whatToDo + ", формирую и отправляю запрос" + Environment.NewLine;
                 sended.ForEach(x =>
                 {
@@ -676,6 +711,7 @@ namespace ApiTiama
             }
             else
             {
+                logger.Trace("NOT ALL FORMS SETTED");
                 var setted = sended.Except(notSet).ToList();
                 ejectlog.Text += "       На " + whatToDo + " было поставлено - " + setted.Count() + " форм, формирую и отправляю запрос" + Environment.NewLine;
                 // получаем формы, которые встали на сдув и прописываем
@@ -711,6 +747,11 @@ namespace ApiTiama
                 }
 
                 ejectlog.Text += "<---- БД обновлена, ЗАВЕРШАЮ работу" + Environment.NewLine;
+                logger.Info(id1.Remove(id1.Length - 2) + " WHERE Id = 1 ");
+                logger.Info(id1.Remove(id2.Length - 2) + " WHERE Id = 2 ");
+                logger.Info(id1.Remove(id3.Length - 2) + " WHERE Id = 3 ");
+                logger.Info(id1.Remove(id4.Length - 2) + " WHERE Id = 4 ");
+
             }
             catch (Exception ex)
             {
